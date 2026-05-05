@@ -20,7 +20,7 @@ python -m pytest                            # included in full suite
 ### A01 — Broken Access Control
 - **Policy**: Every non-public route must redirect unauthenticated users to `/login` when
   `GOOGLE_CLIENT_ID` is set. Public paths are limited to `/login`, `/auth/google`,
-  `/auth/google/callback`, and `/static/`.
+  `/auth/google/callback`, `/static/`, and `/security.txt`.
 - **Test**: `test_auth_middleware_redirects_unauthenticated_requests`,
   `test_auth_middleware_allows_public_paths`
 - **Dev note**: Auth is intentionally disabled locally when `GOOGLE_CLIENT_ID` is unset. Never
