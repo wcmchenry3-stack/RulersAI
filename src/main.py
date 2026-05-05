@@ -233,7 +233,13 @@ _APP_BASE_URL = os.environ.get("APP_BASE_URL", "")
 _AUTH_ENABLED = bool(os.environ.get("GOOGLE_CLIENT_ID"))
 
 # Auth middleware — skips public paths and dev mode (no GOOGLE_CLIENT_ID set)
-_PUBLIC_PATHS = {"/login", "/auth/google", "/auth/google/callback", "/security.txt", "/.well-known/security.txt"}
+_PUBLIC_PATHS = {
+    "/login",
+    "/auth/google",
+    "/auth/google/callback",
+    "/security.txt",
+    "/.well-known/security.txt",
+}
 
 
 @app.middleware("http")
