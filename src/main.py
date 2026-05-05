@@ -233,7 +233,7 @@ _APP_BASE_URL = os.environ.get("APP_BASE_URL", "")
 _AUTH_ENABLED = bool(os.environ.get("GOOGLE_CLIENT_ID"))
 
 # Auth middleware — skips public paths and dev mode (no GOOGLE_CLIENT_ID set)
-_PUBLIC_PATHS = {"/login", "/auth/google", "/auth/google/callback", "/security.txt"}
+_PUBLIC_PATHS = {"/login", "/auth/google", "/auth/google/callback", "/security.txt", "/.well-known/security.txt"}
 
 
 @app.middleware("http")
@@ -406,6 +406,11 @@ async def security_txt():
         "Policy: https://rulersai.buffingchi.com/static/privacy.html\n"
     )
     return Response(content=content, media_type="text/plain")
+
+
+@app.get("/.well-known/security.txt", include_in_schema=False)
+async def security_txt_well_known():
+    return RedirectResponse("/security.txt", status_code=301)
 
 
 # ---------- Preview (single office) — see src/routers/preview.py ----------
