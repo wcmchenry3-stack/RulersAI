@@ -317,7 +317,7 @@ if not _session_secret:
 app.add_middleware(SessionMiddleware, secret_key=_session_secret)
 
 
-@app.get("/login", response_class=HTMLResponse)
+@app.api_route("/login", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse(request, "login.html")
 
