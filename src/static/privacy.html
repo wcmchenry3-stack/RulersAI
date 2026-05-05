@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — RulersAI</title>
+  <link rel="icon" type="image/png" href="/static/images/rulersai-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/theme.css">
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem('rulersai_theme') === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--color-background);
+      color: var(--color-on-surface);
+      margin: 0;
+      padding: 2rem 1rem;
+    }
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-on-surface);
+      margin-bottom: 0.25rem;
+    }
+    .updated {
+      font-size: 0.85rem;
+      color: var(--color-on-surface-variant);
+      margin-bottom: 2rem;
+    }
+    h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+    p, li {
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--color-on-surface-variant);
+    }
+    ul {
+      padding-left: 1.25rem;
+    }
+    .back {
+      display: inline-block;
+      margin-top: 2.5rem;
+      font-size: 0.875rem;
+      color: var(--color-on-tertiary-container);
+      text-decoration: none;
+    }
+    .back:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: 2026-05-04</p>
+
+    <p>RulersAI is a private, single-user application. This policy describes what data is collected and how it is used.</p>
+
+    <h2>Authentication</h2>
+    <p>Access requires sign-in via Google OAuth. The app receives your Google account email address solely to verify that you are the authorized user. No other profile data (name, photo, contacts) is stored.</p>
+
+    <h2>Data stored</h2>
+    <ul>
+      <li>Your email address, held in a server-side session for the duration of your login.</li>
+      <li>Political office holder data scraped from Wikipedia — no personal data about you.</li>
+      <li>Application logs (scraper runs, errors) stored locally on the server.</li>
+    </ul>
+
+    <h2>Data sharing</h2>
+    <p>No data is sold, rented, or shared with third parties. The app makes outbound requests only to Wikipedia (data source), Google OAuth (authentication), and optionally Google Gemini / OpenAI APIs (AI features). Those services have their own privacy policies.</p>
+
+    <h2>Cookies &amp; analytics</h2>
+    <p>A single session cookie is set to maintain your login state. No advertising cookies, fingerprinting, or third-party tracking scripts are used.</p>
+
+    <h2>Contact</h2>
+    <p>Questions about this policy: <a href="mailto:wcmchenry3@gmail.com">wcmchenry3@gmail.com</a></p>
+
+    <a class="back" href="/login">&larr; Back to sign-in</a>
+  </main>
+</body>
+</html>

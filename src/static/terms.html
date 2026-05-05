@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terms of Use — RulersAI</title>
+  <link rel="icon" type="image/png" href="/static/images/rulersai-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/theme.css">
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem('rulersai_theme') === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--color-background);
+      color: var(--color-on-surface);
+      margin: 0;
+      padding: 2rem 1rem;
+    }
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-on-surface);
+      margin-bottom: 0.25rem;
+    }
+    .updated {
+      font-size: 0.85rem;
+      color: var(--color-on-surface-variant);
+      margin-bottom: 2rem;
+    }
+    h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+    p, li {
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--color-on-surface-variant);
+    }
+    ul {
+      padding-left: 1.25rem;
+    }
+    .back {
+      display: inline-block;
+      margin-top: 2.5rem;
+      font-size: 0.875rem;
+      color: var(--color-on-tertiary-container);
+      text-decoration: none;
+    }
+    .back:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Terms of Use</h1>
+    <p class="updated">Last updated: 2026-05-04</p>
+
+    <p>RulersAI is a private, single-user application. By signing in you agree to the following terms.</p>
+
+    <h2>Authorized use</h2>
+    <p>Access is restricted to the single authorized account holder. Sharing credentials or attempting to bypass authentication is prohibited.</p>
+
+    <h2>Acceptable use</h2>
+    <ul>
+      <li>The app may be used to research political office holder data for lawful, non-commercial purposes.</li>
+      <li>You must not use the app in any way that violates Wikipedia's Terms of Use or the terms of any third-party service the app integrates with (Google OAuth, Google Gemini, OpenAI).</li>
+      <li>Automated scraping beyond the app's built-in rate-limited workflows is not permitted.</li>
+    </ul>
+
+    <h2>No warranty</h2>
+    <p>The app and its data are provided "as is" without warranty of any kind. Office holder data is sourced from Wikipedia and may be incomplete or incorrect. Do not rely on it for legal, financial, or safety-critical decisions.</p>
+
+    <h2>Limitation of liability</h2>
+    <p>The operator shall not be liable for any direct, indirect, or consequential damages arising from use of the app or reliance on data it presents.</p>
+
+    <h2>Changes</h2>
+    <p>These terms may be updated at any time. Continued use after an update constitutes acceptance of the revised terms.</p>
+
+    <h2>Contact</h2>
+    <p>Questions: <a href="mailto:wcmchenry3@gmail.com">wcmchenry3@gmail.com</a></p>
+
+    <a class="back" href="/login">&larr; Back to sign-in</a>
+  </main>
+</body>
+</html>
