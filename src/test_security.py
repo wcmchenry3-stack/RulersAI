@@ -132,6 +132,10 @@ def test_auth_middleware_allows_public_paths():
             assert (
                 resp.status_code == 200
             ), f"/login must be publicly accessible, got {resp.status_code}"
+            head_resp = c.head("/login", follow_redirects=False)
+            assert (
+                head_resp.status_code == 200
+            ), f"HEAD /login must return 200, got {head_resp.status_code}"
     finally:
         main_mod._AUTH_ENABLED = original
         if prior_db is not None:

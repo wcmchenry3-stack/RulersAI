@@ -45,7 +45,7 @@ def list_unresolved(conn=None) -> list[dict]:
         cur = conn.execute(
             "SELECT id, tc_id, office_name, page_url, prev_rate, new_rate, drop_pp, created_at"
             " FROM structural_change_events"
-            " WHERE resolved = FALSE OR resolved = 0"
+            " WHERE resolved IS NOT TRUE"
             " ORDER BY id DESC"
         )
         keys = [
