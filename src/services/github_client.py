@@ -229,7 +229,9 @@ class GitHubClient:
         backoff = 1.0
         for attempt in range(3):
             try:
-                resp = httpx.get(url, headers=self._headers, params=params, timeout=15.0)
+                resp = httpx.get(
+                    url, headers=self._headers, params=params, timeout=15.0, follow_redirects=True
+                )
                 if resp.status_code == 429:
                     if attempt == 2:
                         logger.error("GitHub GET rate-limited after 3 attempts: %s", url)
@@ -256,7 +258,9 @@ class GitHubClient:
         backoff = 1.0
         for attempt in range(3):
             try:
-                resp = httpx.put(url, headers=self._headers, json=json, timeout=15.0)
+                resp = httpx.put(
+                    url, headers=self._headers, json=json, timeout=15.0, follow_redirects=True
+                )
                 if resp.status_code == 429:
                     if attempt == 2:
                         raise RuntimeError(f"GitHub PUT rate-limited after 3 attempts: {url}")
@@ -280,7 +284,9 @@ class GitHubClient:
         backoff = 1.0
         for attempt in range(3):
             try:
-                resp = httpx.patch(url, headers=self._headers, json=json, timeout=15.0)
+                resp = httpx.patch(
+                    url, headers=self._headers, json=json, timeout=15.0, follow_redirects=True
+                )
                 if resp.status_code == 429:
                     if attempt == 2:
                         raise RuntimeError(f"GitHub PATCH rate-limited after 3 attempts: {url}")
@@ -306,7 +312,9 @@ class GitHubClient:
         backoff = 1.0
         for attempt in range(3):
             try:
-                resp = httpx.post(url, headers=self._headers, json=json, timeout=15.0)
+                resp = httpx.post(
+                    url, headers=self._headers, json=json, timeout=15.0, follow_redirects=True
+                )
                 if resp.status_code == 429:
                     if attempt == 2:
                         raise RuntimeError(f"GitHub POST rate-limited after 3 attempts: {url}")
