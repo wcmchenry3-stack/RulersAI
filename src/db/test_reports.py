@@ -228,7 +228,7 @@ def test_term_ends_report_deduplicates_multiple_table_configs(tmp_db):
     term_end = _today_minus(10)
     wiki = "https://example.test/wiki/DedupPerson"
 
-    db_office_terms.insert_office_term(
+    id1 = db_office_terms.insert_office_term(
         office_details_id=od_id,
         office_table_config_id=tc1,
         individual_id=ind_id,
@@ -237,7 +237,7 @@ def test_term_ends_report_deduplicates_multiple_table_configs(tmp_db):
         term_end=term_end,
         conn=tmp_db,
     )
-    db_office_terms.insert_office_term(
+    id2 = db_office_terms.insert_office_term(
         office_details_id=od_id,
         office_table_config_id=tc2,
         individual_id=ind_id,
@@ -247,6 +247,11 @@ def test_term_ends_report_deduplicates_multiple_table_configs(tmp_db):
         conn=tmp_db,
     )
     tmp_db.commit()
+
+    assert id1 == id2, (
+        f"Expected second insert to upsert row {id1} but got new row {id2}; "
+        "idx_office_terms_hierarchy_dedup must fire across office_table_config rows"
+    )
 
     results = db_reports.get_recent_term_ends(conn=tmp_db)
     matching = [r for r in results if r["Name"] == "Dedup Person"]
@@ -262,7 +267,7 @@ def test_term_starts_report_deduplicates_multiple_table_configs(tmp_db):
     term_start = _today_minus(10)
     wiki = "https://example.test/wiki/DedupPersonStart"
 
-    db_office_terms.insert_office_term(
+    id1 = db_office_terms.insert_office_term(
         office_details_id=od_id,
         office_table_config_id=tc1,
         individual_id=ind_id,
@@ -271,7 +276,7 @@ def test_term_starts_report_deduplicates_multiple_table_configs(tmp_db):
         term_end=None,
         conn=tmp_db,
     )
-    db_office_terms.insert_office_term(
+    id2 = db_office_terms.insert_office_term(
         office_details_id=od_id,
         office_table_config_id=tc2,
         individual_id=ind_id,
@@ -281,6 +286,11 @@ def test_term_starts_report_deduplicates_multiple_table_configs(tmp_db):
         conn=tmp_db,
     )
     tmp_db.commit()
+
+    assert id1 == id2, (
+        f"Expected second insert to upsert row {id1} but got new row {id2}; "
+        "idx_office_terms_hierarchy_dedup must fire across office_table_config rows"
+    )
 
     results = db_reports.get_recent_term_starts(conn=tmp_db)
     matching = [r for r in results if r["Name"] == "Dedup Person Start"]

@@ -50,17 +50,19 @@ def insert_office_term(
             and office_table_config_id is not None
         ):
             # office_id is NOT NULL; use office_table_config_id so the runnable-unit id is consistent.
+            # Conflict key is (office_details_id, wiki_url, ...) so inserts from different
+            # office_table_config rows for the same office upsert the same row instead of
+            # creating duplicates (idx_office_terms_hierarchy_dedup).
             cur = conn.execute(
                 """INSERT INTO office_terms
                    (office_id, office_details_id, office_table_config_id, individual_id, party_id, district, term_start, term_end, term_start_year, term_end_year, term_start_imprecise, term_end_imprecise, wiki_url)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                   ON CONFLICT (office_id, wiki_url, term_start, term_end, term_start_year, term_end_year) DO UPDATE SET
+                   ON CONFLICT (office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, '')) DO UPDATE SET
                      individual_id=EXCLUDED.individual_id,
                      party_id=EXCLUDED.party_id,
                      district=EXCLUDED.district,
                      term_start_imprecise=EXCLUDED.term_start_imprecise,
                      term_end_imprecise=EXCLUDED.term_end_imprecise,
-                     office_details_id=EXCLUDED.office_details_id,
                      office_table_config_id=EXCLUDED.office_table_config_id
                    RETURNING id""",
                 (

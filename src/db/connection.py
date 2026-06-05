@@ -719,6 +719,17 @@ def _run_pg_migrations(conn) -> None:
         """,
     )
 
+    # Issue #636: add a unique index on the content-based hierarchy key so that
+    # insert_office_term's ON CONFLICT fires across office_table_config rows, preventing
+    # re-accumulation after every scrape. Must run after the dedup above (index creation
+    # fails if duplicates exist). NULLs are distinct in PG unique indexes, so legacy rows
+    # with office_details_id IS NULL are unaffected.
+    _apply(
+        "pg_office_terms_hierarchy_dedup_idx",
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup"
+        " ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''))",
+    )
+
 
 def _sqlite_add_columns_if_missing(conn) -> None:
     """Idempotently add new columns to pre-existing SQLite tables.
