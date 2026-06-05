@@ -6,7 +6,7 @@ on:
 
 jobs:
   ci:
-    uses: wcmchenry3-stack/office_holder_cursor/.github/workflows/ci.yml@main
+    uses: wcmchenry3-stack/RulersAI/.github/workflows/ci.yml@main
     secrets: inherit
 
   deploy:
