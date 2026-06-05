@@ -14,6 +14,7 @@ from datetime import date, timedelta
 import pytest
 
 from src.db import individuals as db_individuals
+from src.db import office_terms as db_office_terms
 from src.db import offices as db_offices
 from src.db import reports as db_reports
 
@@ -163,3 +164,127 @@ def test_get_recent_term_starts_excludes_term_outside_window(tmp_db):
 def test_get_recent_term_starts_returns_empty_list_with_no_terms(tmp_db):
     results = db_reports.get_recent_term_starts(conn=tmp_db)
     assert isinstance(results, list)
+
+
+# ---------------------------------------------------------------------------
+# Deduplication: multiple office_table_config rows must not multiply report rows
+# (Regression for issue #634 — office with N table configs produced N identical rows)
+# ---------------------------------------------------------------------------
+
+
+def _make_office_two_tables(conn) -> tuple[int, int, int]:
+    """Create an office with 2 table configs. Returns (office_details_id, tc_id_1, tc_id_2)."""
+    od_id = db_offices.create_office(
+        {
+            "country_id": 1,
+            "state_id": None,
+            "city_id": None,
+            "level_id": None,
+            "branch_id": None,
+            "department": "",
+            "name": "Dedup Test Office",
+            "enabled": True,
+            "notes": "",
+            "url": "https://en.wikipedia.org/wiki/Dedup_Test_Office",
+            "table_configs": [
+                {
+                    "name": "",
+                    "table_no": 1,
+                    "table_rows": 1,
+                    "link_column": 1,
+                    "party_column": 0,
+                    "term_start_column": 2,
+                    "term_end_column": 3,
+                    "district_column": 0,
+                    "enabled": 1,
+                },
+                {
+                    "name": "",
+                    "table_no": 2,
+                    "table_rows": 1,
+                    "link_column": 1,
+                    "party_column": 0,
+                    "term_start_column": 2,
+                    "term_end_column": 3,
+                    "district_column": 0,
+                    "enabled": 1,
+                },
+            ],
+        },
+        conn=conn,
+    )
+    cur = conn.execute(
+        "SELECT id FROM office_table_config WHERE office_details_id = %s ORDER BY table_no",
+        (od_id,),
+    )
+    tc_ids = [row[0] for row in cur.fetchall()]
+    assert len(tc_ids) == 2, "Expected 2 table configs"
+    return od_id, tc_ids[0], tc_ids[1]
+
+
+def test_term_ends_report_deduplicates_multiple_table_configs(tmp_db):
+    od_id, tc1, tc2 = _make_office_two_tables(tmp_db)
+    ind_id = _make_individual(tmp_db, "/wiki/DedupPerson", full_name="Dedup Person")
+    term_end = _today_minus(10)
+    wiki = "https://en.wikipedia.org/wiki/DedupPerson"
+
+    db_office_terms.insert_office_term(
+        office_details_id=od_id,
+        office_table_config_id=tc1,
+        individual_id=ind_id,
+        wiki_url=wiki,
+        term_start=_today_minus(400),
+        term_end=term_end,
+        conn=tmp_db,
+    )
+    db_office_terms.insert_office_term(
+        office_details_id=od_id,
+        office_table_config_id=tc2,
+        individual_id=ind_id,
+        wiki_url=wiki,
+        term_start=_today_minus(400),
+        term_end=term_end,
+        conn=tmp_db,
+    )
+    tmp_db.commit()
+
+    results = db_reports.get_recent_term_ends(conn=tmp_db)
+    matching = [r for r in results if r["Name"] == "Dedup Person"]
+    assert len(matching) == 1, (
+        f"Expected 1 row for Dedup Person but got {len(matching)}; "
+        "office with multiple table_configs must not produce duplicate report rows"
+    )
+
+
+def test_term_starts_report_deduplicates_multiple_table_configs(tmp_db):
+    od_id, tc1, tc2 = _make_office_two_tables(tmp_db)
+    ind_id = _make_individual(tmp_db, "/wiki/DedupPersonStart", full_name="Dedup Person Start")
+    term_start = _today_minus(10)
+    wiki = "https://en.wikipedia.org/wiki/DedupPersonStart"
+
+    db_office_terms.insert_office_term(
+        office_details_id=od_id,
+        office_table_config_id=tc1,
+        individual_id=ind_id,
+        wiki_url=wiki,
+        term_start=term_start,
+        term_end=None,
+        conn=tmp_db,
+    )
+    db_office_terms.insert_office_term(
+        office_details_id=od_id,
+        office_table_config_id=tc2,
+        individual_id=ind_id,
+        wiki_url=wiki,
+        term_start=term_start,
+        term_end=None,
+        conn=tmp_db,
+    )
+    tmp_db.commit()
+
+    results = db_reports.get_recent_term_starts(conn=tmp_db)
+    matching = [r for r in results if r["Name"] == "Dedup Person Start"]
+    assert len(matching) == 1, (
+        f"Expected 1 row for Dedup Person Start but got {len(matching)}; "
+        "office with multiple table_configs must not produce duplicate report rows"
+    )
