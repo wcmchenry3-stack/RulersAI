@@ -702,23 +702,6 @@ def _run_pg_migrations(conn) -> None:
         " created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
     )
 
-    # Issue #634: office_terms accumulated duplicate rows when an office has multiple
-    # office_table_config rows — each config produces a distinct office_id value, so the
-    # UNIQUE(office_id, wiki_url, ...) constraint never fired for cross-config dupes.
-    # Deduplicate: for each (individual_id, office_details_id, term_start, term_end, wiki_url)
-    # group, keep the row with the lowest id and delete the rest.
-    _apply(
-        "pg_office_terms_dedup_multi_table_config",
-        """
-        DELETE FROM office_terms
-        WHERE id NOT IN (
-            SELECT MIN(id)
-            FROM office_terms
-            GROUP BY individual_id, office_details_id, term_start, term_end, wiki_url
-        )
-        """,
-    )
-
 
 def _sqlite_add_columns_if_missing(conn) -> None:
     """Idempotently add new columns to pre-existing SQLite tables.

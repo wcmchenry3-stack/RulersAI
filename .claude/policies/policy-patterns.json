@@ -5,7 +5,7 @@
   },
   "wikipedia": {
     "detect": "wikipedia\\.org|mediawiki|wikimedia",
-    "skip": "^\\.env|\\.test\\.[jt]sx?$|\\.spec\\.[jt]sx?$|test_.*\\.py$|_test\\.py$|/test.*\\.py$|/tests/.*\\.py$"
+    "skip": "\\.test\\.[jt]sx?$|\\.spec\\.[jt]sx?$"
   },
   "gemini": {
     "detect": "google\\.generativeai|from google.*generativeai|genai\\.|GenerativeModel|GEMINI_API_KEY|GOOGLE_AI_API_KEY",
