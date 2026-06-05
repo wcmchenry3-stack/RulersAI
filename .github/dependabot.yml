@@ -1,0 +1,8 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Pin-based SHA references are still tracked — Dependabot resolves the
+    # new tag's SHA and opens a PR, keeping bumps explicit and reviewable.
