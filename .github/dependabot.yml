@@ -1,0 +1,11 @@
+version: 2
+updates:
+  # SHA-pinned actions are still tracked: Dependabot resolves the tag behind
+  # the SHA and opens a PR when a newer version is released.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore

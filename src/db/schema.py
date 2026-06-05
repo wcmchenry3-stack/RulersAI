@@ -233,6 +233,7 @@ CREATE TABLE IF NOT EXISTS office_terms (
 CREATE INDEX IF NOT EXISTS idx_office_terms_office_id ON office_terms(office_id);
 CREATE INDEX IF NOT EXISTS idx_office_terms_individual_id ON office_terms(individual_id);
 CREATE INDEX IF NOT EXISTS idx_office_terms_wiki_url ON office_terms(wiki_url);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''), COALESCE(term_start_year, -1), COALESCE(term_end_year, -1));
 CREATE INDEX IF NOT EXISTS idx_individuals_insuf_vitals_checked_at ON individuals(insufficient_vitals_checked_at);
 
 -- Parser test scripts
@@ -663,6 +664,7 @@ CREATE TABLE IF NOT EXISTS office_terms (
 CREATE INDEX IF NOT EXISTS idx_office_terms_office_id ON office_terms(office_id);
 CREATE INDEX IF NOT EXISTS idx_office_terms_individual_id ON office_terms(individual_id);
 CREATE INDEX IF NOT EXISTS idx_office_terms_wiki_url ON office_terms(wiki_url);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''), COALESCE(term_start_year, -1), COALESCE(term_end_year, -1));
 -- idx_individuals_insuf_vitals_checked_at is created via _run_pg_migrations (pg migration)
 -- so that ALTER TABLE ADD COLUMN runs first on pre-existing databases.
 

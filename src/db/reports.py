@@ -45,7 +45,7 @@ def _term_report_query(
     else:
         where = f"ot.{date_column} BETWEEN date('now', '-90 days') AND CURRENT_DATE"
     cur = conn.execute(f"""
-        SELECT
+        SELECT DISTINCT
           i.full_name AS "Name",
           c.name AS "Country Name",
           s.name AS "State Name",
