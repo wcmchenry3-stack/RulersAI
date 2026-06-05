@@ -786,7 +786,7 @@ def _sqlite_add_columns_if_missing(conn) -> None:
     try:
         conn.execute("""DELETE FROM office_terms WHERE id NOT IN (
                 SELECT MIN(id) FROM office_terms
-                GROUP BY individual_id, office_details_id, term_start, term_end, wiki_url
+                GROUP BY individual_id, office_details_id, term_start, term_end, term_start_year, term_end_year, wiki_url
             )""")
         conn.commit()
     except Exception:
