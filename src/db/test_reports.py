@@ -39,7 +39,7 @@ def _make_office(conn) -> int:
             "name": "Report Test Office",
             "enabled": True,
             "notes": "",
-            "url": "https://en.wikipedia.org/wiki/Report_Test_Office",
+            "url": "https://example.test/wiki/Report_Test_Office",
             "table_configs": [
                 {
                     "name": "",
@@ -69,7 +69,7 @@ def _insert_term(
         """INSERT INTO office_terms
            (office_id, individual_id, wiki_url, term_start, term_end)
            VALUES (%s, %s, %s, %s, %s)""",
-        (od_id, ind_id, f"https://en.wikipedia.org/wiki/P{ind_id}", term_start, term_end),
+        (od_id, ind_id, f"https://example.test/wiki/P{ind_id}", term_start, term_end),
     )
     conn.commit()
 
@@ -185,7 +185,7 @@ def _make_office_two_tables(conn) -> tuple[int, int, int]:
             "name": "Dedup Test Office",
             "enabled": True,
             "notes": "",
-            "url": "https://en.wikipedia.org/wiki/Dedup_Test_Office",
+            "url": "https://example.test/wiki/Dedup_Test_Office",
             "table_configs": [
                 {
                     "name": "",
@@ -226,7 +226,7 @@ def test_term_ends_report_deduplicates_multiple_table_configs(tmp_db):
     od_id, tc1, tc2 = _make_office_two_tables(tmp_db)
     ind_id = _make_individual(tmp_db, "/wiki/DedupPerson", full_name="Dedup Person")
     term_end = _today_minus(10)
-    wiki = "https://en.wikipedia.org/wiki/DedupPerson"
+    wiki = "https://example.test/wiki/DedupPerson"
 
     db_office_terms.insert_office_term(
         office_details_id=od_id,
@@ -260,7 +260,7 @@ def test_term_starts_report_deduplicates_multiple_table_configs(tmp_db):
     od_id, tc1, tc2 = _make_office_two_tables(tmp_db)
     ind_id = _make_individual(tmp_db, "/wiki/DedupPersonStart", full_name="Dedup Person Start")
     term_start = _today_minus(10)
-    wiki = "https://en.wikipedia.org/wiki/DedupPersonStart"
+    wiki = "https://example.test/wiki/DedupPersonStart"
 
     db_office_terms.insert_office_term(
         office_details_id=od_id,
