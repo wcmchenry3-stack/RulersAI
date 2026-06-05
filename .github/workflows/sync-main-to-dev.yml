@@ -8,3 +8,6 @@ jobs:
   sync:
     uses: wcmchenry3-stack/.github/.github/workflows/called-sync-main-to-dev.yml@main
     secrets: inherit
+    permissions:
+      contents: read
+      pull-requests: write

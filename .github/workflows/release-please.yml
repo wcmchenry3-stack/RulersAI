@@ -7,3 +7,6 @@ on:
 jobs:
   release-please:
     uses: wcmchenry3-stack/.github/.github/workflows/called-release-please.yml@main
+    permissions:
+      contents: write
+      pull-requests: write
