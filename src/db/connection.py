@@ -767,6 +767,28 @@ def _sqlite_add_columns_if_missing(conn) -> None:
     except Exception:
         pass
 
+    # Issue #636: dedup existing office_terms rows then create the hierarchy unique index.
+    # Mirrors the PG migrations pg_office_terms_dedup_multi_table_config and
+    # pg_office_terms_hierarchy_dedup_idx for pre-existing SQLite databases.
+    try:
+        conn.execute(
+            """DELETE FROM office_terms WHERE id NOT IN (
+                SELECT MIN(id) FROM office_terms
+                GROUP BY individual_id, office_details_id, term_start, term_end, wiki_url
+            )"""
+        )
+        conn.commit()
+    except Exception:
+        pass
+    try:
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup"
+            " ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''))"
+        )
+        conn.commit()
+    except Exception:
+        pass
+
 
 def _init_sqlite(path: Path | None = None) -> None:
     """SQLite init for tests — applies the final schema directly (no migrations needed)."""
