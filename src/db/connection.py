@@ -719,6 +719,30 @@ def _run_pg_migrations(conn) -> None:
         """,
     )
 
+    # Issue #636: add a unique index on the content-based hierarchy key so that
+    # insert_office_term's ON CONFLICT fires across office_table_config rows, preventing
+    # re-accumulation after every scrape. Must run after the dedup above (index creation
+    # fails if duplicates exist). NULLs are distinct in PG unique indexes, so legacy rows
+    # with office_details_id IS NULL are unaffected.
+    _apply(
+        "pg_office_terms_hierarchy_dedup_idx",
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup"
+        " ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''))",
+    )
+
+    # Issue #636 v2: extend the index to include year columns so people who served
+    # multiple terms (e.g. two stints, both with NULL term_start/term_end) are not
+    # collapsed into a single row.  Drop the old two-column key and recreate it.
+    _apply(
+        "pg_office_terms_hierarchy_dedup_idx_drop_v1",
+        "DROP INDEX IF EXISTS idx_office_terms_hierarchy_dedup",
+    )
+    _apply(
+        "pg_office_terms_hierarchy_dedup_idx_v2",
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup"
+        " ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''), COALESCE(term_start_year, -1), COALESCE(term_end_year, -1))",
+    )
+
 
 def _sqlite_add_columns_if_missing(conn) -> None:
     """Idempotently add new columns to pre-existing SQLite tables.
@@ -753,6 +777,33 @@ def _sqlite_add_columns_if_missing(conn) -> None:
         if count == 0:
             conn.execute("UPDATE office_table_config SET cache_batch = id % 7")
             conn.commit()
+    except Exception:
+        pass
+
+    # Issue #636: dedup existing office_terms rows then create the hierarchy unique index.
+    # Mirrors the PG migrations pg_office_terms_dedup_multi_table_config and
+    # pg_office_terms_hierarchy_dedup_idx for pre-existing SQLite databases.
+    try:
+        conn.execute("""DELETE FROM office_terms WHERE id NOT IN (
+                SELECT MIN(id) FROM office_terms
+                GROUP BY individual_id, office_details_id, term_start, term_end, term_start_year, term_end_year, wiki_url
+            )""")
+        conn.commit()
+    except Exception:
+        pass
+    # Issue #636 v2: drop the old two-column key (if present) and recreate with year columns
+    # so multiple terms per person (same NULL dates, different years) are not collapsed.
+    try:
+        conn.execute("DROP INDEX IF EXISTS idx_office_terms_hierarchy_dedup")
+        conn.commit()
+    except Exception:
+        pass
+    try:
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup"
+            " ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''), COALESCE(term_start_year, -1), COALESCE(term_end_year, -1))"
+        )
+        conn.commit()
     except Exception:
         pass
 
