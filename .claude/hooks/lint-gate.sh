@@ -19,6 +19,11 @@ REPORT=""
 # ── Python linting (black + ruff) ───────────────────────────────
 if [ -f "pyproject.toml" ] || [ -f "requirements.txt" ] || [ -f "setup.py" ] || [ -f "setup.cfg" ]; then
   PYTHON=$(command -v python3 || command -v python || true)
+  # Verify Python is functional (guards against Windows Store stubs that
+  # exist in PATH but fail when invoked with arguments)
+  if [ -n "$PYTHON" ] && ! "$PYTHON" -c "pass" &>/dev/null 2>&1; then
+    PYTHON=""
+  fi
   if [ -n "$PYTHON" ] && (command -v black &>/dev/null || "$PYTHON" -m black --version &>/dev/null 2>&1); then
     OUT=$("$PYTHON" -m black --check --quiet . 2>&1) || {
       FAIL=1
