@@ -771,12 +771,10 @@ def _sqlite_add_columns_if_missing(conn) -> None:
     # Mirrors the PG migrations pg_office_terms_dedup_multi_table_config and
     # pg_office_terms_hierarchy_dedup_idx for pre-existing SQLite databases.
     try:
-        conn.execute(
-            """DELETE FROM office_terms WHERE id NOT IN (
+        conn.execute("""DELETE FROM office_terms WHERE id NOT IN (
                 SELECT MIN(id) FROM office_terms
                 GROUP BY individual_id, office_details_id, term_start, term_end, wiki_url
-            )"""
-        )
+            )""")
         conn.commit()
     except Exception:
         pass
