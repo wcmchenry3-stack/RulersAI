@@ -8,8 +8,15 @@ on:
 
 jobs:
   zap-scan:
-    uses: wcmchenry3-stack/.github/.github/workflows/called-zap-scheduled.yml@main
-    with:
-      target-url: 'https://rulersai.buffingchi.com'
-      artifact-name: 'zap-weekly-office-holder'
-    secrets: inherit
+    name: ZAP baseline scan
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Run ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: 'https://rulersai.buffingchi.com'
+          fail_action: false
+          artifact_name: zap-weekly-office-holder
