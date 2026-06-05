@@ -730,6 +730,19 @@ def _run_pg_migrations(conn) -> None:
         " ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''))",
     )
 
+    # Issue #636 v2: extend the index to include year columns so people who served
+    # multiple terms (e.g. two stints, both with NULL term_start/term_end) are not
+    # collapsed into a single row.  Drop the old two-column key and recreate it.
+    _apply(
+        "pg_office_terms_hierarchy_dedup_idx_drop_v1",
+        "DROP INDEX IF EXISTS idx_office_terms_hierarchy_dedup",
+    )
+    _apply(
+        "pg_office_terms_hierarchy_dedup_idx_v2",
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup"
+        " ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''), COALESCE(term_start_year, -1), COALESCE(term_end_year, -1))",
+    )
+
 
 def _sqlite_add_columns_if_missing(conn) -> None:
     """Idempotently add new columns to pre-existing SQLite tables.
@@ -778,10 +791,17 @@ def _sqlite_add_columns_if_missing(conn) -> None:
         conn.commit()
     except Exception:
         pass
+    # Issue #636 v2: drop the old two-column key (if present) and recreate with year columns
+    # so multiple terms per person (same NULL dates, different years) are not collapsed.
+    try:
+        conn.execute("DROP INDEX IF EXISTS idx_office_terms_hierarchy_dedup")
+        conn.commit()
+    except Exception:
+        pass
     try:
         conn.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup"
-            " ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''))"
+            " ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''), COALESCE(term_start_year, -1), COALESCE(term_end_year, -1))"
         )
         conn.commit()
     except Exception:

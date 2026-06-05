@@ -57,7 +57,7 @@ def insert_office_term(
                 """INSERT INTO office_terms
                    (office_id, office_details_id, office_table_config_id, individual_id, party_id, district, term_start, term_end, term_start_year, term_end_year, term_start_imprecise, term_end_imprecise, wiki_url)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                   ON CONFLICT (office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, '')) DO UPDATE SET
+                   ON CONFLICT (office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''), COALESCE(term_start_year, -1), COALESCE(term_end_year, -1)) DO UPDATE SET
                      individual_id=EXCLUDED.individual_id,
                      party_id=EXCLUDED.party_id,
                      district=EXCLUDED.district,
