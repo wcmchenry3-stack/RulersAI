@@ -737,28 +737,49 @@ def _run_pg_migrations(conn) -> None:
         "pg_office_terms_hierarchy_dedup_idx_drop_v1",
         "DROP INDEX IF EXISTS idx_office_terms_hierarchy_dedup",
     )
-    # Issue #651: the dedup MUST NOT be a one-time _apply step. Between deploy retries
-    # there is no dedup index (it was dropped above), so ON CONFLICT cannot fire and
-    # scrape jobs re-insert duplicates. Running the dedup inside _apply means it is
-    # skipped on subsequent attempts, hitting fresh duplicates every time. Instead,
-    # run it unconditionally on every startup until the index has been committed.
+    # Issues #654, #655: dedup + CREATE INDEX + migration-record must be a single atomic
+    # transaction under a table lock. SHARE ROW EXCLUSIVE blocks concurrent INSERT/UPDATE/DELETE
+    # (including the still-live old deploy's scrape jobs) for the duration, but allows reads.
+    # With no intermediate commit, no duplicate can be inserted between the DELETE and the index
+    # creation. On failure, rollback and continue startup without the index — the migration row
+    # is not recorded so the block retries on the next boot (graceful degradation, not crash-loop).
     if "pg_office_terms_hierarchy_dedup_idx_v2" not in applied:
-        conn.execute("""
-            DELETE FROM office_terms
-            WHERE id NOT IN (
-                SELECT MIN(id)
-                FROM office_terms
-                GROUP BY office_details_id, wiki_url,
-                         COALESCE(term_start, ''), COALESCE(term_end, ''),
-                         COALESCE(term_start_year, -1), COALESCE(term_end_year, -1)
-            )
+        try:
+            conn.execute("LOCK TABLE office_terms IN SHARE ROW EXCLUSIVE MODE")
+            conn.execute("""
+                DELETE FROM office_terms
+                WHERE id NOT IN (
+                    SELECT MIN(id)
+                    FROM office_terms
+                    GROUP BY office_details_id, wiki_url,
+                             COALESCE(term_start, ''), COALESCE(term_end, ''),
+                             COALESCE(term_start_year, -1), COALESCE(term_end_year, -1)
+                )
             """)
-        conn.commit()
-    _apply(
-        "pg_office_terms_hierarchy_dedup_idx_v2",
-        "CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup"
-        " ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''), COALESCE(term_end, ''), COALESCE(term_start_year, -1), COALESCE(term_end_year, -1))",
-    )
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup"
+                " ON office_terms(office_details_id, wiki_url, COALESCE(term_start, ''),"
+                " COALESCE(term_end, ''), COALESCE(term_start_year, -1), COALESCE(term_end_year, -1))"
+            )
+            conn.execute(
+                "INSERT INTO schema_migrations (id) VALUES (%s)",
+                ("pg_office_terms_hierarchy_dedup_idx_v2",),
+            )
+            conn.commit()
+        except Exception as idx_err:
+            conn.rollback()
+            _log.warning(
+                "office_terms v2 index migration failed — starting without index,"
+                " will retry next boot. WARNING: hierarchy insert_office_term calls"
+                " will fail until the index exists: %s",
+                idx_err,
+            )
+            try:
+                import sentry_sdk
+
+                sentry_sdk.capture_exception(idx_err)
+            except Exception:
+                pass
 
 
 def _sqlite_add_columns_if_missing(conn) -> None:
