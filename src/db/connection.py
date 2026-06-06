@@ -797,13 +797,15 @@ def _sqlite_add_columns_if_missing(conn) -> None:
     except Exception:
         pass
 
-    # Issue #636: dedup existing office_terms rows then create the hierarchy unique index.
-    # Mirrors the PG migrations pg_office_terms_dedup_multi_table_config and
-    # pg_office_terms_hierarchy_dedup_idx for pre-existing SQLite databases.
+    # Issue #651: dedup on the exact index key (not individual_id) so cross-individual
+    # duplicates — two individual records sharing the same wiki_url for the same
+    # office/term — are removed before the unique index is (re)created.
     try:
         conn.execute("""DELETE FROM office_terms WHERE id NOT IN (
                 SELECT MIN(id) FROM office_terms
-                GROUP BY individual_id, office_details_id, term_start, term_end, term_start_year, term_end_year, wiki_url
+                GROUP BY office_details_id, wiki_url,
+                         COALESCE(term_start, ''), COALESCE(term_end, ''),
+                         COALESCE(term_start_year, -1), COALESCE(term_end_year, -1)
             )""")
         conn.commit()
     except Exception:
