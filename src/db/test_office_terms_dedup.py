@@ -322,9 +322,9 @@ def test_pg_v2_index_block_is_skipped_when_already_applied():
     _run_pg_migrations(mock_conn)
 
     executed_sqls = [str(c.args[0]) for c in mock_conn.execute.call_args_list if c.args]
-    assert not any("LOCK TABLE" in s for s in executed_sqls), (
-        "LOCK TABLE must not run when v2 migration is already applied"
-    )
+    assert not any(
+        "LOCK TABLE" in s for s in executed_sqls
+    ), "LOCK TABLE must not run when v2 migration is already applied"
     # Distinguish the v2-block DELETE (groups by term_start_year) from the earlier
     # one-time dedup migration (groups by individual_id, no year columns).
     assert not any(
