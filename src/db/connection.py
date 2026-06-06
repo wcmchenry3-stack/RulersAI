@@ -766,17 +766,18 @@ def _run_pg_migrations(conn) -> None:
                 ("pg_office_terms_hierarchy_dedup_idx_v2",),
             )
             conn.commit()
-        except Exception as _idx_err:
+        except Exception as idx_err:
             conn.rollback()
             _log.warning(
                 "office_terms v2 index migration failed — starting without index,"
-                " will retry next boot: %s",
-                _idx_err,
+                " will retry next boot. WARNING: hierarchy insert_office_term calls"
+                " will fail until the index exists: %s",
+                idx_err,
             )
             try:
                 import sentry_sdk
 
-                sentry_sdk.capture_exception(_idx_err)
+                sentry_sdk.capture_exception(idx_err)
             except Exception:
                 pass
 

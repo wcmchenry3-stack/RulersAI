@@ -303,7 +303,7 @@ def test_pg_v2_index_block_is_skipped_when_already_applied():
     Verifies idempotency: once the index is committed, neither LOCK TABLE nor DELETE
     executes on subsequent startups.
     """
-    from unittest.mock import MagicMock, call
+    from unittest.mock import MagicMock
     from src.db.connection import _run_pg_migrations
 
     mock_cursor = MagicMock()
