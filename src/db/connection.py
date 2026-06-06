@@ -737,23 +737,23 @@ def _run_pg_migrations(conn) -> None:
         "pg_office_terms_hierarchy_dedup_idx_drop_v1",
         "DROP INDEX IF EXISTS idx_office_terms_hierarchy_dedup",
     )
-    # Dedup on the v2 index key before creating it. The earlier dedup grouped by
-    # individual_id, so rows with different individual_ids but the same
-    # (office_details_id, wiki_url, term dates, term years) both survived — they
-    # would collide on the new index. Keep MIN(id) per index-key tuple.
-    _apply(
-        "pg_office_terms_dedup_v2_index_key",
-        """
-        DELETE FROM office_terms
-        WHERE id NOT IN (
-            SELECT MIN(id)
-            FROM office_terms
-            GROUP BY office_details_id, wiki_url,
-                     COALESCE(term_start, ''), COALESCE(term_end, ''),
-                     COALESCE(term_start_year, -1), COALESCE(term_end_year, -1)
-        )
-        """,
-    )
+    # Issue #651: the dedup MUST NOT be a one-time _apply step. Between deploy retries
+    # there is no dedup index (it was dropped above), so ON CONFLICT cannot fire and
+    # scrape jobs re-insert duplicates. Running the dedup inside _apply means it is
+    # skipped on subsequent attempts, hitting fresh duplicates every time. Instead,
+    # run it unconditionally on every startup until the index has been committed.
+    if "pg_office_terms_hierarchy_dedup_idx_v2" not in applied:
+        conn.execute("""
+            DELETE FROM office_terms
+            WHERE id NOT IN (
+                SELECT MIN(id)
+                FROM office_terms
+                GROUP BY office_details_id, wiki_url,
+                         COALESCE(term_start, ''), COALESCE(term_end, ''),
+                         COALESCE(term_start_year, -1), COALESCE(term_end_year, -1)
+            )
+            """)
+        conn.commit()
     _apply(
         "pg_office_terms_hierarchy_dedup_idx_v2",
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_office_terms_hierarchy_dedup"
