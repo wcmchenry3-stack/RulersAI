@@ -1,9 +1,9 @@
 """Regression tests for office_terms dedup behaviour during DB startup.
 
-Covers issue #651: the dedup must clean cross-individual duplicate rows (rows
-with different individual_id but the same index key) so that
-idx_office_terms_hierarchy_dedup can always be created, even when scrape jobs
-have accumulated duplicate rows between deploy retries.
+Covers issues #651, #654, #655: the dedup must clean cross-individual duplicate rows and
+the dedup + CREATE INDEX + migration-record must be atomic (single transaction under a
+table lock) so concurrent writers cannot reintroduce duplicates between the steps.
+Startup must also degrade gracefully rather than crash-loop when the index step fails.
 
 Run: pytest src/db/test_office_terms_dedup.py -v
 """
@@ -243,3 +243,90 @@ def test_dedup_cleans_duplicates_accumulated_between_deploy_retries(tmp_db):
 
     assert _count_terms(tmp_db, wiki) == 1, "Retry dedup must clean newly accumulated duplicates"
     assert _index_exists(tmp_db), "Index must exist after successful retry dedup"
+
+
+# ---------------------------------------------------------------------------
+# PG migration path: atomicity and graceful degradation (issues #654, #655)
+# ---------------------------------------------------------------------------
+
+
+def test_pg_v2_index_failure_degrades_gracefully():
+    """If CREATE UNIQUE INDEX fails, _run_pg_migrations must not raise, must call
+    rollback(), and must not record the migration row (so the block retries next boot).
+
+    Regression for #654/#655: previously the non-atomic two-step (dedup commit then
+    separate index creation) would crash the app, perpetuating a deadlock where the
+    old instance kept the new one from ever becoming healthy.
+    """
+    from unittest.mock import MagicMock
+    from src.db.connection import _run_pg_migrations
+
+    mock_cursor = MagicMock()
+    mock_cursor.fetchall.return_value = []  # empty applied set — all migrations will run
+
+    mock_conn = MagicMock()
+    schema_migrations_inserts: list[str] = []
+
+    def _execute(sql, *args, **kwargs):
+        sql_str = sql.strip() if isinstance(sql, str) else ""
+        if "SELECT id FROM schema_migrations" in sql_str:
+            return mock_cursor
+        # Only fail on the v2 index (which includes term_start_year),
+        # not the earlier v1 index (4-column key, no year columns).
+        if (
+            "CREATE UNIQUE INDEX" in sql_str
+            and "idx_office_terms_hierarchy_dedup" in sql_str
+            and "term_start_year" in sql_str
+        ):
+            raise RuntimeError("could not create unique index: duplicate key")
+        if "INSERT INTO schema_migrations" in sql_str and args:
+            schema_migrations_inserts.append(str(args[0]))
+        return MagicMock()
+
+    mock_conn.execute.side_effect = _execute
+
+    # Must NOT raise — graceful degradation
+    _run_pg_migrations(mock_conn)
+
+    # rollback must be called exactly once (for the failed v2 block)
+    mock_conn.rollback.assert_called_once()
+
+    # Migration row must NOT be recorded — ensures retry on next boot
+    assert not any(
+        "pg_office_terms_hierarchy_dedup_idx_v2" in s for s in schema_migrations_inserts
+    ), "v2 migration row must not be recorded when index creation fails"
+
+
+def test_pg_v2_index_block_is_skipped_when_already_applied():
+    """If the v2 migration is already in schema_migrations, the dedup block is not re-run.
+
+    Verifies idempotency: once the index is committed, neither LOCK TABLE nor DELETE
+    executes on subsequent startups.
+    """
+    from unittest.mock import MagicMock, call
+    from src.db.connection import _run_pg_migrations
+
+    mock_cursor = MagicMock()
+    # Simulate a DB where the v2 migration has already been applied
+    mock_cursor.fetchall.return_value = [("pg_office_terms_hierarchy_dedup_idx_v2",)]
+
+    mock_conn = MagicMock()
+
+    def _execute(sql, *args, **kwargs):
+        if "SELECT id FROM schema_migrations" in sql.strip():
+            return mock_cursor
+        return MagicMock()
+
+    mock_conn.execute.side_effect = _execute
+
+    _run_pg_migrations(mock_conn)
+
+    executed_sqls = [str(c.args[0]) for c in mock_conn.execute.call_args_list if c.args]
+    assert not any("LOCK TABLE" in s for s in executed_sqls), (
+        "LOCK TABLE must not run when v2 migration is already applied"
+    )
+    # Distinguish the v2-block DELETE (groups by term_start_year) from the earlier
+    # one-time dedup migration (groups by individual_id, no year columns).
+    assert not any(
+        "DELETE FROM office_terms" in s and "term_start_year" in s for s in executed_sqls
+    ), "v2 dedup DELETE must not run when migration is already applied"
