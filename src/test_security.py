@@ -330,6 +330,24 @@ def test_csp_header_present(client):
     assert "default-src" in csp, f"CSP must contain a default-src directive, got: {csp!r}"
 
 
+@pytest.mark.security
+def test_csp_no_fallback_directives(client):
+    """CSP must explicitly set directives that have no default-src fallback."""
+    resp = client.get("/run")
+    csp = resp.headers.get("content-security-policy", "")
+    for directive in ("form-action", "frame-ancestors", "base-uri", "object-src"):
+        assert directive in csp, f"CSP missing '{directive}' (no default-src fallback): {csp!r}"
+
+
+@pytest.mark.security
+def test_hsts_set_when_forwarded_proto_https(client):
+    """HSTS must be set when the request arrives via HTTPS proxy (X-Forwarded-Proto)."""
+    resp = client.get("/run", headers={"x-forwarded-proto": "https"})
+    hsts = resp.headers.get("strict-transport-security", "")
+    assert hsts, "HSTS header not set when X-Forwarded-Proto: https"
+    assert "max-age=" in hsts, f"HSTS header malformed: {hsts!r}"
+
+
 # ---------------------------------------------------------------------------
 # H12 — Rate limit exception handler wired up
 # ---------------------------------------------------------------------------
