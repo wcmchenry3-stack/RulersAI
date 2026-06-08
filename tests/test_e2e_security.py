@@ -77,6 +77,20 @@ def test_security_headers_csp_present(app_client):
     assert "default-src" in csp, f"CSP header missing or malformed: {csp!r}"
 
 
+def test_security_headers_csp_no_fallback_directives(app_client):
+    resp = app_client.get("/run")
+    csp = resp.headers.get("content-security-policy", "")
+    for directive in ("form-action", "frame-ancestors", "base-uri", "object-src"):
+        assert directive in csp, f"CSP missing '{directive}' (no default-src fallback): {csp!r}"
+
+
+def test_security_headers_hsts_with_forwarded_proto(app_client):
+    resp = app_client.get("/run", headers={"x-forwarded-proto": "https"})
+    hsts = resp.headers.get("strict-transport-security", "")
+    assert hsts, "HSTS header not set when X-Forwarded-Proto: https"
+    assert "max-age=" in hsts, f"HSTS header malformed: {hsts!r}"
+
+
 def test_security_headers_permissions_policy(app_client):
     resp = app_client.get("/run")
     pp = resp.headers.get("permissions-policy", "")

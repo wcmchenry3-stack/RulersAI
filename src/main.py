@@ -267,10 +267,17 @@ async def add_security_headers(request: Request, call_next):
         "script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data: https://*.googleusercontent.com;",
+        "img-src 'self' data: https://*.googleusercontent.com; "
+        "form-action 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "object-src 'none';",
     )
     response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
-    if request.url.scheme == "https":
+    # X-Forwarded-Proto is set by Render's TLS-terminating proxy; fall back to
+    # request.url.scheme for local dev (where there is no proxy).
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    if proto == "https":
         response.headers.setdefault(
             "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
         )
