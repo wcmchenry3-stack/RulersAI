@@ -9,3 +9,14 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: chore
+    groups:
+      # CVE fixes get their own PR so they are never held up behind a routine batch.
+      security-updates:
+        applies-to: security-updates
+        patterns: ["*"]
+      # Minor/patch action bumps batch into one PR. Majors still open
+      # individually — an action major can change inputs or runtime.
+      actions:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
